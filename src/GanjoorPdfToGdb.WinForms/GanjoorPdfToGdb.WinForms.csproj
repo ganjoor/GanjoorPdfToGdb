@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+    <AssemblyName>Pdf2GdbStudio</AssemblyName>
+    <RootNamespace>GanjoorPdfToGdb.WinForms</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GanjoorPdfToGdb.Core\GanjoorPdfToGdb.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Optional: put the unzipped poppler folder in src\GanjoorPdfToGdb.WinForms\poppler and it is copied
+       next to the exe on every build (the app finds pdftoppm.exe anywhere below that folder). -->
+  <ItemGroup>
+    <None Update="poppler\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,124 @@
+# GanjoorPdfToGdb (spike)
+
+Converts a scanned Persian poetry book (PDF) into
+
+* a Desktop Ganjoor database (`<poet>.gdb`) – same four tables as `DbBrowser.CreateEmptyDB`,
+* a JSON sidecar (`<poet>.pages.json`) linking every poem and verse to its **1-based PDF page index**,
+* a report (`<poet>.report.txt`) listing everything that deserves a human look.
+
+Target: **.NET 10**, cross-platform (Windows / macOS / Linux). It does not depend on the WinForms desktop code.
+
+## Projects
+
+| project | what |
+|---|---|
+| `GanjoorPdfToGdb.Core` | all the logic (model client, page cache, assembler, GDB + JSON writers, `ConversionJob`) |
+| `GanjoorPdfToGdb.Cli` | `pdf2gdb` command line tool (cross-platform) |
+| `GanjoorPdfToGdb.WinForms` | **Pdf2GdbStudio**, a Windows Forms window around the same `ConversionJob` (Windows only) |
+
+```
+dotnet build -c Release
+```
+
+PDF pages are rendered with poppler's `pdftoppm`/`pdfinfo`. They are looked up in this order:
+the poppler folder given in the options, a folder named `poppler` next to the program (anywhere below it,
+e.g. `poppler\Library\bin`), then PATH (`brew install poppler` on macOS). Alternatively pass a folder of
+already rendered page images with `--images-dir`.
+
+## Windows app (Pdf2GdbStudio)
+
+1. Unzip a Windows build of poppler and put the whole folder in a folder named `poppler` next to
+   `Pdf2GdbStudio.exe`. (Or put it in `src\GanjoorPdfToGdb.WinForms\poppler` before building; it is copied
+   to the output automatically.) poppler is GPL software: check that redistributing it suits you.
+2. Start the app, drop a PDF onto the window (or use *انتخاب*), type the poet name, the service address,
+   model and API key, and press **شروع تبدیل**.
+3. **آزمایش** converts only the first 3 pages of the range (written to a separate "(آزمایش)" file): a cheap
+   way to check the key, the model and the output before the full run.
+   **ساخت دوباره بدون اتصال** rebuilds the output from the cached pages without any API calls.
+   **توقف** stops cleanly; the next start continues from the cache.
+4. Errors open in a window with selectable text (copy button), not a disappearing message.
+5. Settings are remembered in `%AppData%\GanjoorPdfToGdb`. The API key is saved there only if you tick the box
+   (stored as plain text in your user profile).
+
+Page ranges accept Persian digits and «همه» (e.g. `۷۴-۱۱۳۰`).
+
+## Run
+
+```
+export GDB_API_KEY=...            # Windows: setx GDB_API_KEY ...
+dotnet run --project src/GanjoorPdfToGdb.Cli -- run \
+    --pdf soha.pdf --poet "طالب آملی" --out out \
+    --base-url https://api.avalai.ir/v1 --model claude-sonnet-5-5 \
+    --pages 74-1130
+```
+
+Try a few pages first (`--pages 600-601`), look at `out/work/pages/0600.json` and the report, then go wide.
+`--config appsettings.sample.json` also works; it accepts your existing key names
+(`OpenAIBaseUrl`, `OpenAIAPIKey`, `OpenAITitleModel`). Environment variables override the file.
+
+Every model answer is cached in `out/work/pages/NNNN.json`: an interrupted run resumes where it stopped, and
+
+```
+dotnet run --project src/GanjoorPdfToGdb.Cli -- assemble --pdf soha.pdf --poet "..." --out out
+```
+
+rebuilds the GDB/JSON from the cache with no API calls (use it after changing title templates etc.).
+Delete a page's cache file to have the model re-read that page.
+
+## How it works
+
+1. Each page image goes to the model with a fixed JSON contract (`Llm/PagePrompts.cs`): page kind
+   (poetry / prose / contents / index / title / blank), running header, and ordered blocks: category and
+   poem headings, one `verse_row` per printed line (`two_column` / `centered` / `single`), footnotes,
+   margin verse counters.
+2. Pages are processed **in order**; the previous page's state (current section, open poem, last rows) is
+   sent along, so poems that continue across pages work without a heading.
+3. `BookAssembler` (deterministic) builds categories → poems → rows, drops non-poetry pages and footnotes,
+   normalizes text (ی/ک, Persian digits, tatweel, footnote markers, ۀ → هٔ) and checks the margin verse
+   counters (a centered pair counts as one bayt) to detect missing/duplicated lines.
+4. `PoemBuilder` turns rows into verses. A centered pair whose second line ends with the poem's rhyme is
+   stored as an ordinary Right+Left bayt (typographic centering); otherwise it stays CenteredVerse1/2.
+   Every such decision is flagged.
+
+## Flags (in the sidecar and the report)
+
+| flag | meaning |
+|---|---|
+| `centered-treated-as-normal` | centered couplet ends with the poem's rhyme → stored as Right+Left |
+| `centered-treated-as-normal-couplet-rhyme` | masnavi: the two centered lines rhyme with each other, like the other bayts → Right+Left |
+| `centered-kept` | centered couplet does not rhyme → stored as CenteredVerse1/2 |
+| `centered-unverified` | not enough rhyme evidence either way → kept centered, please check |
+| `centered-odd-row` | an odd number of centered lines in a row |
+| `rhyme-outlier` | a second hemistich that does not end with the poem's (otherwise clear) rhyme: proofread it |
+| `counter-jump` | margin verse counters disagree with the bayts counted, and the next number confirms it: lines missing/duplicated, or numbering restarts |
+| `counter-misread` | a single margin number is off but its neighbours fit: a misprint or misread digit, the text is probably fine |
+| `unsure-word:<word>` | the model named this specific word as uncertain: check it |
+| `model-uncertain` | (older cached pages) imprecise flag; kept on the verse only, not in the report |
+| `footnote-marker-removed` | a marker like (۱) was stripped from the verse |
+| `no-heading` | verses found with no poem heading |
+| `duplicate-title-renamed` | repeated title (e.g. «قطعه») got a counter |
+| `page-missing` | a page failed and the poem may be incomplete |
+
+## Sidecar JSON
+
+`schema`, `source` (file, sha256, pageCount, `pageIndexBase: 1`), `generator`, `poet`, `categories[]` →
+`poems[]` (`gdbPoemId`, `key`, `title`, `printedNumber`, `pdfPages`, `firstVerseHash`, `verses[]` with
+`pdfPage`, `marginNumber`, `flags`, `review`), `footnotes[]` (text the model took for footnotes) and `issues[]`. `key` and `firstVerseHash` let you match a published poem
+back to the sidecar even if the site renumbers the ids on import.
+
+## Status / not done yet
+
+* The **WinForms window has not been compiled or run**: the build environment had no Windows desktop SDK.
+  It is a thin layer (all real work is in `ConversionJob`, which the CLI also uses and which was tested),
+  but expect to fix a small compile error or layout detail on first build. Please send me the output.
+* Verified so far: compiles on .NET 10; end-to-end run against a **local mock** OpenAI endpoint using real
+  pages of the sample PDF (render → request with image → parse → assemble → GDB + JSON; resume from cache;
+  assemble-only mode; failure handling). The GDB schema was compared with the desktop DDL.
+* **Not** verified: real model output quality (OCR accuracy, heading detection, centered-line detection) –
+  no endpoint was reachable from the build environment. First job: run 20 pages and compare with typed text.
+* `Microsoft.Data.Sqlite` is used by `GdbWriter` (NuGet); during development it was exercised through a
+  stand-in on the system SQLite, so the first build on your machine is the first real NuGet restore.
+* Planned: geometric layout pass (line extents/gaps from the image) to confirm centered vs two-column and
+  margin numbers independently of the model; bounding boxes in the sidecar; PDFium renderer (no poppler
+  dependency); sub-categories; poet biography from the preface; review UI; optional two-model cross-check.
+* `tools/mock_server.py` is a synthetic OpenAI-compatible server for offline tests (its page answers are made up).

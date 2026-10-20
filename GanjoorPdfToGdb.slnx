@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GanjoorPdfToGdb.Cli/GanjoorPdfToGdb.Cli.csproj" />
+    <Project Path="src/GanjoorPdfToGdb.Core/GanjoorPdfToGdb.Core.csproj" />
+    <Project Path="src/GanjoorPdfToGdb.WinForms/GanjoorPdfToGdb.WinForms.csproj" />
+  </Folder>
+</Solution>
