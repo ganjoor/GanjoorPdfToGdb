@@ -35,6 +35,8 @@ public sealed class Category
     public int Id { get; set; }
     public string Title { get; set; } = "";
     public int PdfPageStart { get; set; }
+    /// <summary>Enclosing category (e.g. «غزلیات» for a «حرف الف» sub-section); null = directly under the poet.</summary>
+    public Category? Parent { get; set; }
     public List<Poem> Poems { get; } = new();
 }
 
@@ -57,6 +59,12 @@ public sealed class Poem
     public int Id { get; set; }
     public string Title { get; set; } = "";
     public string? PrintedNumber { get; set; }
+    /// <summary>The number as the model read it, when it was corrected from the numbering sequence.</summary>
+    public string? RawPrintedNumber { get; set; }
+    /// <summary>True when the title was generated from the number (so it follows a number correction).</summary>
+    public bool TitleFromNumber { get; set; }
+    /// <summary>Creation order across the whole book.</summary>
+    public int Seq { get; set; }
     public int PdfPageStart { get; set; }
     public List<Row> Rows { get; } = new();
     public List<Verse> Verses { get; } = new();

@@ -39,6 +39,10 @@ public sealed class AppConfig
     public bool NormalizeHeYeToHamza { get; set; } = true;
     /// <summary>Category used for verses that appear before any section heading.</summary>
     public string UnknownCategoryTitle { get; set; } = "نامشخص";
+    /// <summary>Check the printed poem numbers against their sequence and fix isolated misreads (e.g. 350 between 249 and 301).</summary>
+    public bool AutoCorrectPoemNumbers { get; set; } = true;
+    /// <summary>Headings starting with one of these words are sub-sections of the current main section.</summary>
+    public List<string> SubSectionPrefixes { get; set; } = new() { "حرف" };
     public int FirstPoetId { get; set; } = 1001;
     public int FirstCatId { get; set; } = 10001;
     public int FirstPoemId { get; set; } = 100001;
@@ -78,6 +82,9 @@ public sealed class AppConfig
             cfg.UntitledPoemTemplate = Str(root, cfg.UntitledPoemTemplate, "UntitledPoemTemplate")!;
             cfg.DisambiguateDuplicateTitles = Bool(root, cfg.DisambiguateDuplicateTitles, "DisambiguateDuplicateTitles");
             cfg.NormalizeHeYeToHamza = Bool(root, cfg.NormalizeHeYeToHamza, "NormalizeHeYeToHamza");
+            cfg.AutoCorrectPoemNumbers = Bool(root, cfg.AutoCorrectPoemNumbers, "AutoCorrectPoemNumbers");
+            if (Find(root, "SubSectionPrefixes") is { ValueKind: JsonValueKind.Array } sp)
+                cfg.SubSectionPrefixes = sp.EnumerateArray().Select(e => e.GetString() ?? "").Where(s => s.Length > 0).ToList();
             cfg.UnknownCategoryTitle = Str(root, cfg.UnknownCategoryTitle, "UnknownCategoryTitle")!;
             cfg.FirstPoetId = (int)Num(root, cfg.FirstPoetId, "FirstPoetId");
             cfg.FirstCatId = (int)Num(root, cfg.FirstCatId, "FirstCatId");
@@ -98,6 +105,7 @@ public sealed class AppConfig
     {
         var c = (AppConfig)MemberwiseClone();
         c.KnownSections = new List<string>(KnownSections);
+        c.SubSectionPrefixes = new List<string>(SubSectionPrefixes);
         return c;
     }
 

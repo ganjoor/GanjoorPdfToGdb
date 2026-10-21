@@ -45,7 +45,7 @@ public static class SidecarWriter
             {
                 gdbCatId = c.Id,
                 title = c.Title,
-                parentGdbCatId = book.PoetCatId,
+                parentGdbCatId = c.Parent?.Id ?? book.PoetCatId,
                 pdfPageStart = c.PdfPageStart,
                 poems = c.Poems.Select(p => new
                 {
@@ -53,6 +53,7 @@ public static class SidecarWriter
                     key = $"{c.Id}/{(p.PrintedNumber ?? p.IndexInCategory.ToString())}",
                     title = p.Title,
                     printedNumber = p.PrintedNumber,
+                    printedNumberRaw = p.RawPrintedNumber,
                     pdfPages = p.Verses.Select(v => v.PdfPage).Distinct().OrderBy(x => x).ToList(),
                     firstVerseHash = p.Verses.Count > 0 ? Sha256Text(p.Verses[0].Text)[..16] : null,
                     verses = p.Verses.Select(v => new

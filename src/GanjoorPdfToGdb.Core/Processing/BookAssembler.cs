@@ -11,8 +11,10 @@ public sealed class BookAssembler
     private readonly Book _book;
     private readonly HashSet<string> _knownSections;
 
-    private Category? _cat;
+    private Category? _cat;   // where new poems go (a sub-section when one is open)
+    private Category? _top;   // the current main section
     private Poem? _poem;
+    private int _poemSeq;
     private int _untitledCounter;
 
     // verse counter validation
@@ -72,7 +74,8 @@ public sealed class BookAssembler
         if (!hasCategoryBlock && !string.IsNullOrWhiteSpace(page.RunningHeader))
         {
             string key = TextNormalizer.LooseKey(page.RunningHeader);
-            if (_knownSections.Contains(key) && (_cat == null || TextNormalizer.LooseKey(_cat.Title) != key))
+            if (_knownSections.Contains(key) && (_cat == null || TextNormalizer.LooseKey(_cat.Title) != key)
+                && (_top == null || TextNormalizer.LooseKey(_top.Title) != key)) // the header of the enclosing section is not a switch
             {
                 string headerTitle = TextNormalizer.Normalize(page.RunningHeader, _cfg);
                 StartCategory(headerTitle, page.PdfPage);
@@ -88,8 +91,13 @@ public sealed class BookAssembler
                 {
                     string title = TextNormalizer.Normalize(b.Text, _cfg);
                     if (title.Length == 0) break;
-                    _knownSections.Add(TextNormalizer.LooseKey(title));
                     if (_cat != null && TextNormalizer.LooseKey(_cat.Title) == TextNormalizer.LooseKey(title)) break; // repeated heading
+                    if (_top != null && IsSubSection(title, b.Level))
+                    {
+                        StartCategory(title, page.PdfPage, _top);
+                        break;
+                    }
+                    _knownSections.Add(TextNormalizer.LooseKey(title));
                     StartCategory(title, page.PdfPage);
                     break;
                 }
@@ -109,12 +117,26 @@ public sealed class BookAssembler
         }
     }
 
-    private void StartCategory(string title, int page)
+    private void StartCategory(string title, int page, Category? parent = null)
     {
         CloseCenteredPair();
-        _cat = new Category { Title = title, PdfPageStart = page };
+        _cat = new Category { Title = title, PdfPageStart = page, Parent = parent };
+        if (parent == null) _top = _cat;
         _book.Categories.Add(_cat);
         _poem = null;
+    }
+
+    /// <summary>A heading is a sub-section when the model says level 2 or it starts with a configured word such as «حرف».</summary>
+    private bool IsSubSection(string title, int? level)
+    {
+        if (level == 2) return true;
+        if (level == 1) return false;
+        string letters = new string(title.Where(char.IsLetterOrDigit).ToArray());
+        return _cfg.SubSectionPrefixes.Any(p =>
+        {
+            string pk = new string(p.Where(char.IsLetterOrDigit).ToArray());
+            return pk.Length > 0 && letters.StartsWith(pk, StringComparison.Ordinal);
+        });
     }
 
     private void StartOrUpdatePoem(Block b, int page)
@@ -131,7 +153,8 @@ public sealed class BookAssembler
         {
             if (text != null) _poem.Title = text;
             if (number != null) _poem.PrintedNumber = number;
-            if (text == null) _poem.Title = ApplyTemplate(_cfg.PoemTitleTemplate, number!, _cat!.Title);
+            if (text == null) { _poem.Title = ApplyTemplate(_cfg.PoemTitleTemplate, number!, _cat!.Title); _poem.TitleFromNumber = true; }
+            else _poem.TitleFromNumber = false;
             return;
         }
 
@@ -140,7 +163,9 @@ public sealed class BookAssembler
             PdfPageStart = page,
             PrintedNumber = number,
             Category = _cat!,
+            Seq = ++_poemSeq,
             IndexInCategory = _cat!.Poems.Count + 1,
+            TitleFromNumber = text == null,
             Title = text ?? ApplyTemplate(_cfg.PoemTitleTemplate, number!, _cat!.Title)
         };
         _cat.Poems.Add(poem);
@@ -156,6 +181,7 @@ public sealed class BookAssembler
             {
                 PdfPageStart = page.PdfPage,
                 Category = _cat!,
+                Seq = ++_poemSeq,
                 IndexInCategory = _cat!.Poems.Count + 1,
                 Title = _cfg.UntitledPoemTemplate.Replace("{n}", TextNormalizer.ToPersianDigits(++_untitledCounter))
             };
@@ -266,9 +292,80 @@ public sealed class BookAssembler
     {
         if (_cat != null) return;
         _cat = new Category { Title = _cfg.UnknownCategoryTitle, PdfPageStart = page };
+        _top = _cat;
         _book.Categories.Add(_cat);
         _book.Issues.Add($"page {page}: verses found before any section heading; placed in category «{_cat.Title}»");
     }
+
+    // ---- printed poem numbers: find misreads from the sequence ----
+    //
+    // Poems are numbered 1, 2, 3 ... in many books. The model sometimes misreads one digit (250 -> 350) or a whole
+    // block shares the same slip. The numbers are split into runs of consecutive values; a run that sits between two
+    // runs and whose length exactly fills the gap between them is a misread block and is renumbered to fit.
+    // Everything else that breaks the sequence is only reported.
+
+    private void CheckPoemNumbers()
+    {
+        var list = _book.Categories.SelectMany(c => c.Poems)
+            .Select(p => (Poem: p, N: TextNormalizer.ParseNumber(p.PrintedNumber)))
+            .Where(x => x.N != null).OrderBy(x => x.Poem.Seq)
+            .Select(x => (x.Poem, N: x.N!.Value)).ToList();
+        if (list.Count < 4) return;
+        var nums = list.Select(x => x.N).ToArray();
+
+        if (_cfg.AutoCorrectPoemNumbers)
+        {
+            for (int pass = 0; pass < 5; pass++)
+            {
+                bool changed = false;
+                var runs = Runs(nums);
+                for (int k = 1; k < runs.Count - 1; k++)
+                {
+                    var (s0, e0) = runs[k];
+                    int p = nums[runs[k - 1].End], q = nums[runs[k + 1].Start];
+                    int len = e0 - s0 + 1;
+                    if (q - p - 1 != len || nums[s0] == p + 1) continue;
+                    var oldFirst = nums[s0]; var oldLast = nums[e0];
+                    for (int i = s0; i <= e0; i++)
+                    {
+                        var poem = list[i].Poem;
+                        poem.RawPrintedNumber ??= poem.PrintedNumber;
+                        nums[i] = p + 1 + (i - s0);
+                        string txt = TextNormalizer.ToPersianDigits(nums[i]);
+                        poem.PrintedNumber = txt;
+                        if (poem.TitleFromNumber) poem.Title = ApplyTemplate(_cfg.PoemTitleTemplate, txt, poem.Category.Title);
+                        poem.Flags.Add("number-corrected");
+                    }
+                    _book.Issues.Add($"pages {list[s0].Poem.PdfPageStart}–{list[e0].Poem.PdfPageStart}: poem numbers {Fa(oldFirst)}–{Fa(oldLast)} changed to {Fa(p + 1)}–{Fa(q - 1)} to fit the sequence between {Fa(p)} and {Fa(q)} (probably misread digits; check the scan)");
+                    changed = true;
+                    break; // runs changed: recompute
+                }
+                if (!changed) break;
+            }
+        }
+
+        // what still breaks the sequence inside one main section is reported
+        for (int i = 1; i < list.Count; i++)
+        {
+            if (nums[i] == nums[i - 1] + 1) continue;
+            if (nums[i] == 1) continue; // a new numbering starts
+            if (Root(list[i].Poem.Category) != Root(list[i - 1].Poem.Category)) continue;
+            list[i].Poem.Flags.Add("number-jump");
+            _book.Issues.Add($"page {list[i].Poem.PdfPageStart}, poem «{list[i].Poem.Title}»: number {Fa(nums[i])} follows {Fa(nums[i - 1])} (a poem may be missing, or a number was misread)");
+        }
+    }
+
+    private static List<(int Start, int End)> Runs(int[] nums)
+    {
+        var runs = new List<(int, int)>();
+        int st = 0;
+        for (int i = 1; i <= nums.Length; i++)
+            if (i == nums.Length || nums[i] != nums[i - 1] + 1) { runs.Add((st, i - 1)); st = i; }
+        return runs;
+    }
+
+    private static Category Root(Category c) { while (c.Parent != null) c = c.Parent; return c; }
+    private static string Fa(int n) => TextNormalizer.ToPersianDigits(n);
 
     private static string ApplyTemplate(string template, string number, string category)
         => template.Replace("{number}", number).Replace("{category}", category);
@@ -278,20 +375,24 @@ public sealed class BookAssembler
     {
         if (_suspect != null) { ReportJump(_suspect, confirmed: false); _suspect = null; } // never confirmed: report it as it is
 
-        // drop empty poems and categories
-        foreach (var c in _book.Categories.ToList())
-        {
+        // drop empty poems and categories (a main section that only holds sub-sections stays)
+        foreach (var c in _book.Categories)
             foreach (var p in c.Poems.Where(p => p.Rows.Count == 0).ToList())
             {
                 c.Poems.Remove(p);
                 _book.Issues.Add($"poem «{p.Title}» (page {p.PdfPageStart}) had no verses and was dropped");
             }
-            if (c.Poems.Count == 0)
+        for (int ci = _book.Categories.Count - 1; ci >= 0; ci--)
+        {
+            var c = _book.Categories[ci];
+            if (c.Poems.Count == 0 && !_book.Categories.Any(x => x.Parent == c))
             {
-                _book.Categories.Remove(c);
+                _book.Categories.RemoveAt(ci);
                 _book.Issues.Add($"category «{c.Title}» (page {c.PdfPageStart}) had no poems and was dropped");
             }
         }
+
+        CheckPoemNumbers();
 
         _book.PoetId = _cfg.FirstPoetId;
         _book.PoetCatId = _cfg.FirstCatId;

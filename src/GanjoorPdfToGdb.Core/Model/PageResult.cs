@@ -43,6 +43,8 @@ public sealed class Block
     public string? Left { get; set; }
     /// <summary>Poem number printed in a poem_heading.</summary>
     public string? Number { get; set; }
+    /// <summary>category_heading only: 1 = main section (قصاید، غزلیات…), 2 = sub-section inside it (e.g. «حرف الف»).</summary>
+    public int? Level { get; set; }
     /// <summary>Verse counter printed in the margin at the height of this row.</summary>
     public string? MarginNumber { get; set; }
     /// <summary>Legacy flag: the model was unsure about something in this row (not precise, see UncertainWords).</summary>

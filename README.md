@@ -122,3 +122,13 @@ back to the sidecar even if the site renumbers the ids on import.
   margin numbers independently of the model; bounding boxes in the sidecar; PDFium renderer (no poppler
   dependency); sub-categories; poet biography from the preface; review UI; optional two-model cross-check.
 * `tools/mock_server.py` is a synthetic OpenAI-compatible server for offline tests (its page answers are made up).
+
+## Sub-sections and poem numbers
+
+* A category heading that the model marks as level 2, or that starts with a word in `SubSectionPrefixes`
+  (default «حرف», e.g. «حرف الف» inside the ghazals), becomes a sub-category of the current main section.
+  A running header equal to the enclosing section never opens a new category.
+* Printed poem numbers are checked against their sequence (`AutoCorrectPoemNumbers`). A block of numbers that fits
+  exactly into the gap between its neighbours (e.g. 350–400 between 249 and 301) is renumbered, flag `number-corrected`
+  (the original is kept as `printedNumberRaw` in the JSON). Other breaks get the flag `number-jump` and an entry in the report.
+  Re-run `assemble` on an existing work folder to apply this without calling the model again.

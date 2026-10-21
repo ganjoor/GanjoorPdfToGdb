@@ -29,8 +29,11 @@ JSON schema:
 }
 
 Block types:
-  {"type":"category_heading","text":"..."}      a large heading where a NEW section of the book visibly begins
+  {"type":"category_heading","text":"...","level":1|2}
+                                                a large heading where a NEW section of the book visibly begins
                                                 (e.g. قصاید، غزلیات، قطعات، رباعیات، مثنویات). NOT the running header.
+                                                level 1 = a main section; level 2 = a sub-section INSIDE the current main
+                                                section (e.g. an alphabetical group such as «حرف الف» inside the ghazals).
   {"type":"poem_heading","text":"...|null","number":"...|null"}
                                                 a title, a poem number, or a label such as «قطعه» that starts a new poem.
   {"type":"verse_row","layout":"two_column","right":"...","left":"..."}

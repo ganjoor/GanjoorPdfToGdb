@@ -37,7 +37,7 @@ public static class GdbWriter
             foreach (var c in book.Categories)
             {
                 Exec(con, tx, "INSERT INTO cat (id, poet_id, text, parent_id, url) VALUES ($id, $poet, $text, $parent, '')",
-                    ("$id", c.Id), ("$poet", book.PoetId), ("$text", c.Title), ("$parent", book.PoetCatId));
+                    ("$id", c.Id), ("$poet", book.PoetId), ("$text", c.Title), ("$parent", c.Parent?.Id ?? book.PoetCatId));
 
                 foreach (var p in c.Poems)
                 {

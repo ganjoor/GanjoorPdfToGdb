@@ -170,9 +170,9 @@ public sealed class ConversionJob
         sb.AppendLine();
         foreach (var c in book.Categories)
         {
-            sb.AppendLine($"[{c.Id}] {c.Title}  (from page {c.PdfPageStart}, {c.Poems.Count} poems)");
+            sb.AppendLine($"{(c.Parent != null ? "  " : "")}[{c.Id}] {c.Title}  (from page {c.PdfPageStart}, {c.Poems.Count} poems)");
             foreach (var p in c.Poems.Where(p => p.Flags.Count > 0))
-                sb.AppendLine($"    poem {p.Id} «{p.Title}» p.{p.PdfPageStart}: {string.Join(", ", p.Flags)}");
+                sb.AppendLine($"{(c.Parent != null ? "  " : "")}    poem {p.Id} «{p.Title}» p.{p.PdfPageStart}: {string.Join(", ", p.Flags)}");
         }
         sb.AppendLine();
         sb.AppendLine("Issues:");
