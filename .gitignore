@@ -10,6 +10,7 @@
 bin/
 obj/
 publish/
+installer/output/
 *.nupkg
 
 # local settings and secrets (API keys, Naskban credentials)
