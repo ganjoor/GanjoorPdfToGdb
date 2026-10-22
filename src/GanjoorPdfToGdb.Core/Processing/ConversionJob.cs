@@ -156,7 +156,10 @@ public sealed class ConversionJob
         if (r.PageKind == "error") return "FAILED - " + r.Notes;
         int rows = r.Blocks.Count(b => b.Type == "verse_row");
         int heads = r.Blocks.Count(b => b.Type is "poem_heading" or "category_heading");
-        return r.PageKind == "poetry" ? $"poetry, {rows} rows, {heads} heading(s)" : r.PageKind + " (skipped)";
+        int paras = r.Blocks.Count(b => b.Type == "prose");
+        return r.PageKind is "poetry" or "prose" && (rows > 0 || paras > 0 || heads > 0)
+            ? $"{r.PageKind}, {rows} verse rows, {paras} paragraph(s), {heads} heading(s)"
+            : r.PageKind + " (skipped)";
     }
 
     public static string BuildReport(Book book, RunStats s)

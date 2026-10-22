@@ -18,6 +18,7 @@ public sealed class MainForm : Form
     private readonly TextBox _model = new();
     private readonly TextBox _apiKey = new();
     private readonly CheckBox _saveKey = new();
+    private readonly CheckBox _includeProse = new();
 
     // actions
     private readonly Button _btnStart = new();
@@ -101,6 +102,10 @@ public sealed class MainForm : Form
             Margin = new Padding(3, 0, 3, 6)
         };
         AddWide(bookGrid, hint);
+        _includeProse.Text = "کتاب نثر و نظم دارد (مثل گلستان): بخش‌های نثر هم به‌صورت بند (پاراگراف) وارد شود";
+        _includeProse.AutoSize = true;
+        _includeProse.Anchor = AnchorStyles.Right;
+        AddWide(bookGrid, _includeProse);
 
         var bookGroup = NewGroup("کتاب", bookGrid);
 
@@ -174,7 +179,7 @@ public sealed class MainForm : Form
 
         _lockWhileRunning.AddRange(new Control[]
         {
-            _pdf, _out, _poet, _pages, _poppler, _baseUrl, _model, _apiKey, _saveKey,
+            _pdf, _out, _poet, _pages, _poppler, _baseUrl, _model, _apiKey, _saveKey, _includeProse,
             browsePdf, browseOut, browsePoppler, _btnAdvanced
         });
     }
@@ -273,6 +278,7 @@ public sealed class MainForm : Form
         _pages.Text = string.IsNullOrWhiteSpace(_ui.PagesSpec) ? "همه" : _ui.PagesSpec;
         _poppler.Text = _ui.PopplerDir;
         _saveKey.Checked = _ui.SaveApiKey;
+        _includeProse.Checked = _ui.IncludeProse;
 
         _baseUrl.Text = _cfg.BaseUrl;
         _model.Text = _cfg.Model;
@@ -285,6 +291,7 @@ public sealed class MainForm : Form
         var c = _cfg.Clone();
         c.BaseUrl = _baseUrl.Text.Trim();
         c.Model = _model.Text.Trim();
+        c.IncludeProse = _includeProse.Checked;
         c.ApiKey = string.IsNullOrWhiteSpace(_apiKey.Text) ? null : _apiKey.Text.Trim();
         return c;
     }
@@ -316,6 +323,7 @@ public sealed class MainForm : Form
         _ui.PagesSpec = _pages.Text.Trim();
         _ui.PopplerDir = _poppler.Text.Trim();
         _ui.SaveApiKey = _saveKey.Checked;
+        _ui.IncludeProse = _includeProse.Checked;
         _ui.Save();
 
         try

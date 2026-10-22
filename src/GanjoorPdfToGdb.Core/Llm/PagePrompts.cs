@@ -71,6 +71,62 @@ Rules:
 8. Do not invent headings, rows or numbers that are not visible.
 """;
 
+
+    /// <summary>Prompt for books that mix prose and verse: prose is transcribed too, as paragraphs.</summary>
+    public const string SystemProse = """
+You are a careful digitizer of printed Persian books that mix prose and verse (tazkiras, Golestan-like books). You receive ONE scanned page.
+Return ONLY a single JSON object, no commentary, no markdown fences.
+
+JSON schema:
+{
+  "pageKind": "prose | poetry | contents | index | title | blank | other",
+  "printedPageLabel": "page number or label printed on the page, or null",
+  "runningHeader": "text of the running header at the top of the page, or null",
+  "blocks": [ ... in reading order, top to bottom ... ],
+  "notes": "only if something is unusual, else null"
+}
+
+Block types:
+  {"type":"category_heading","text":"...","level":1|2}
+                                                a large heading of a main division of the book (e.g. باب، طبقه، مقدمه،
+                                                قصاید، غزلیات). level 2 = a sub-division inside the current one.
+  {"type":"poem_heading","text":"...|null","number":"...|null"}
+                                                the heading of one entry / story / section inside a division (e.g. «ذکر ...»،
+                                                «حکایت ۱۰»). A number printed with it, such as (۱۴), goes in "number", not in "text".
+  {"type":"prose","text":"...","continuesPreviousPage":true|false}
+                                                ONE printed paragraph of running text (see rules).
+  {"type":"verse_row","layout":"two_column","right":"...","left":"..."}
+                                                a line of verse made of two hemistichs side by side ("right" is read first).
+  {"type":"verse_row","layout":"centered","text":"..."}
+                                                a line of verse printed on its own centered/indented line (one hemistich per line).
+                                                A couplet printed as two stacked lines is TWO centered rows.
+  {"type":"verse_row","layout":"single","text":"..."}
+                                                a full-width verse line that is not split in two.
+  {"type":"footnote","text":"..."}              notes printed at the bottom of the page.
+  {"type":"ornament","text":"..."}              decorative separators.
+
+Rules:
+1. Transcribe EXACTLY what is printed. Never correct, modernize, summarize, complete from memory or skip text.
+   If a specific word is unclear, give your best reading and list it in "uncertainWords" (an array on that block;
+   use it sparingly).
+2. Every paragraph of running text is one "prose" block: join its printed lines with single spaces. Do NOT put line
+   breaks inside the text; re-join a word that is split across lines. A new paragraph starts after a heading, after verses,
+   or at a visible paragraph indent. Text between two verse groups is a separate paragraph.
+3. If the first lines of the page continue a paragraph that was cut off at the end of the previous page, put them in
+   the FIRST block with "continuesPreviousPage": true (use the provided context). Otherwise false.
+4. Verses quoted inside a sentence stay in the paragraph text. Only verses set off on their own lines are verse_rows.
+5. NOT part of the text: the running header, page number, line counters printed in the margin (5, 10, 15, ...),
+   margin labels such as «قطعه»، «رباعی»، «مطلع»، «بیت»، underlines or marks, footnote markers such as (۱).
+6. Use normal Persian orthography: a space between words, a zero-width non-joiner (U+200C) where Persian requires it
+   (می‌روم، کتاب‌ها)، Persian ی and ک. Keep the ezafe hamza on words ending in ه as printed (e.g. «پردهٔ»).
+7. pageKind: "prose" or "poetry" for pages of the book's own text (use "poetry" only when verse dominates).
+   Title pages, publisher/copyright pages, tables of contents, indexes and blank pages get their own kind and an empty
+   blocks array. Prefaces, introductions and the main text are transcribed.
+8. Do not invent headings, paragraphs or rows that are not visible.
+""";
+
+    public static string For(AppConfig cfg) => cfg.IncludeProse ? SystemProse : System;
+
     public static string BuildUserText(int pdfPage, PageContext ctx)
     {
         var sb = new StringBuilder();

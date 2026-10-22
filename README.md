@@ -132,3 +132,16 @@ back to the sidecar even if the site renumbers the ids on import.
   exactly into the gap between its neighbours (e.g. 350–400 between 249 and 301) is renumbered, flag `number-corrected`
   (the original is kept as `printedNumberRaw` in the JSON). Other breaks get the flag `number-jump` and an entry in the report.
   Re-run `assemble` on an existing work folder to apply this without calling the model again.
+
+## Books that mix prose and verse (گلستان، تذکرة الشعراء)
+
+Turn on `IncludeProse` (CLI: `--include-prose`; Windows app: the checkbox under the book fields).
+
+* Prose is kept as **paragraph verses** (position -1). One printed paragraph = one verse, with no line breaks;
+  a paragraph cut by a page break is joined to its continuation.
+* Verses printed on their own lines stay verses. In this mode two stacked centered lines are one ordinary bayt
+  (Right + Left), and a lone leftover line becomes a Single verse flagged `odd-hemistich`.
+* Entry headings («ذکر …»، «حکایت …») start a new poem; big divisions («باب»، «طبقه») become categories.
+* Title pages, contents, indexes and blank pages are still skipped. Margin line counters are ignored (they count
+  printed lines, so the verse-counter check is off in this mode).
+* Prose mode has its own cache folder (`work/pages-prose`), so it never mixes with an earlier poetry-only run of the same book.

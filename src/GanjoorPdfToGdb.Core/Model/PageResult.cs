@@ -45,6 +45,8 @@ public sealed class Block
     public string? Number { get; set; }
     /// <summary>category_heading only: 1 = main section (قصاید، غزلیات…), 2 = sub-section inside it (e.g. «حرف الف»).</summary>
     public int? Level { get; set; }
+    /// <summary>prose only: the paragraph continues the one that was cut off at the end of the previous page.</summary>
+    public bool ContinuesPreviousPage { get; set; }
     /// <summary>Verse counter printed in the margin at the height of this row.</summary>
     public string? MarginNumber { get; set; }
     /// <summary>Legacy flag: the model was unsure about something in this row (not precise, see UncertainWords).</summary>

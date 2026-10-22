@@ -39,6 +39,11 @@ public sealed class AppConfig
     public bool NormalizeHeYeToHamza { get; set; } = true;
     /// <summary>Category used for verses that appear before any section heading.</summary>
     public string UnknownCategoryTitle { get; set; } = "نامشخص";
+    /// <summary>
+    /// For books that mix prose and verse (گلستان، تذکرة الشعراء): the prose is kept too, as paragraph verses
+    /// (position -1, one paragraph = one verse, no line breaks). Verses printed on their own lines stay verses.
+    /// </summary>
+    public bool IncludeProse { get; set; } = false;
     /// <summary>Check the printed poem numbers against their sequence and fix isolated misreads (e.g. 350 between 249 and 301).</summary>
     public bool AutoCorrectPoemNumbers { get; set; } = true;
     /// <summary>Headings starting with one of these words are sub-sections of the current main section.</summary>
@@ -82,6 +87,7 @@ public sealed class AppConfig
             cfg.UntitledPoemTemplate = Str(root, cfg.UntitledPoemTemplate, "UntitledPoemTemplate")!;
             cfg.DisambiguateDuplicateTitles = Bool(root, cfg.DisambiguateDuplicateTitles, "DisambiguateDuplicateTitles");
             cfg.NormalizeHeYeToHamza = Bool(root, cfg.NormalizeHeYeToHamza, "NormalizeHeYeToHamza");
+            cfg.IncludeProse = Bool(root, cfg.IncludeProse, "IncludeProse");
             cfg.AutoCorrectPoemNumbers = Bool(root, cfg.AutoCorrectPoemNumbers, "AutoCorrectPoemNumbers");
             if (Find(root, "SubSectionPrefixes") is { ValueKind: JsonValueKind.Array } sp)
                 cfg.SubSectionPrefixes = sp.EnumerateArray().Select(e => e.GetString() ?? "").Where(s => s.Length > 0).ToList();

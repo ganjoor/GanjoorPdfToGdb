@@ -11,6 +11,7 @@ public sealed class UiSettings
     public string PagesSpec { get; set; } = "";
     public string PopplerDir { get; set; } = "";
     public bool SaveApiKey { get; set; }
+    public bool IncludeProse { get; set; }
 
     public static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GanjoorPdfToGdb");
     public static string UiPath => Path.Combine(Dir, "ui.json");

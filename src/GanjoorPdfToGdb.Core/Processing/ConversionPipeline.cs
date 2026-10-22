@@ -50,7 +50,8 @@ public sealed class ConversionPipeline
         _log = log;
     }
 
-    private string PagesDir => Path.Combine(_workDir, "pages");
+    // prose mode has its own cache: the same page gives a different answer there
+    private string PagesDir => Path.Combine(_workDir, _cfg.IncludeProse ? "pages-prose" : "pages");
     private string ImagesDir => Path.Combine(_workDir, "images");
 
     public async Task<Book> RunAsync(string poetName, IReadOnlyList<int> pages, CancellationToken ct = default)
@@ -111,7 +112,7 @@ public sealed class ConversionPipeline
         {
             try
             {
-                ChatResult chat = await _client.CompleteAsync(PagePrompts.System, userText, png, ct);
+                ChatResult chat = await _client.CompleteAsync(PagePrompts.For(_cfg), userText, png, ct);
                 Stats.PromptTokens += chat.PromptTokens;
                 Stats.CompletionTokens += chat.CompletionTokens;
 

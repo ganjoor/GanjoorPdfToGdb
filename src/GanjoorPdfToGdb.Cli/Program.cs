@@ -19,6 +19,7 @@ Options:
   --poet <name>         poet name written into the GDB
   --out <dir>           output directory (gdb, sidecar json, report, work/ cache)
   --pages <spec>        all | 74-1130 | 9,76,600-601      (default: all)
+  --include-prose       keep the prose of mixed books (Golestan, tazkiras) as paragraph verses
   --max-pages <n>       only the first n pages of the selection (quick trial)
   --config <file>       JSON settings (BaseUrl, ApiKey, Model, ...). OpenAIBaseUrl/OpenAIAPIKey/OpenAITitleModel also work
   --model <id> --base-url <url>   override model / endpoint
@@ -43,6 +44,7 @@ The API key is read from GDB_API_KEY or OPENAI_API_KEY (preferred) or the config
             var cfg = AppConfig.Load(opt.GetValueOrDefault("config"));
             if (opt.TryGetValue("model", out var m)) cfg.Model = m;
             if (opt.TryGetValue("base-url", out var bu)) cfg.BaseUrl = bu;
+            if (opt.ContainsKey("include-prose")) cfg.IncludeProse = true;
 
             var job = new JobOptions
             {
@@ -88,6 +90,7 @@ The API key is read from GDB_API_KEY or OPENAI_API_KEY (preferred) or the config
         for (int i = 0; i < a.Length; i++)
         {
             if (!a[i].StartsWith("--")) throw new ArgumentException("Unexpected argument: " + a[i]);
+            if (a[i].Equals("--include-prose", StringComparison.OrdinalIgnoreCase)) { d["include-prose"] = "true"; continue; }
             if (i + 1 >= a.Length) throw new ArgumentException("Missing value for " + a[i]);
             d[a[i][2..]] = a[++i];
         }

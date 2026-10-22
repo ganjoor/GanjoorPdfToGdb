@@ -62,7 +62,8 @@ public sealed class BookAssembler
             _poem?.Flags.Add("page-missing");
             return;
         }
-        if (page.PageKind != "poetry")
+        bool wanted = page.PageKind == "poetry" || (_cfg.IncludeProse && page.PageKind == "prose");
+        if (!wanted)
         {
             _book.SkippedPages++;
             return;
@@ -112,7 +113,10 @@ public sealed class BookAssembler
                     if (!string.IsNullOrWhiteSpace(b.Text))
                         _book.Footnotes.Add(new FootnoteInfo(page.PdfPage, TextNormalizer.Normalize(b.Text, _cfg)));
                     break;
-                // prose and ornament on a poetry page are ignored.
+                case "prose":
+                    if (_cfg.IncludeProse) AddParagraph(b, page);
+                    break;
+                // ornaments (and prose when IncludeProse is off) are ignored.
             }
         }
     }
@@ -172,22 +176,48 @@ public sealed class BookAssembler
         _poem = poem;
     }
 
+    private void EnsurePoem(int pdfPage)
+    {
+        EnsureCategory(pdfPage);
+        if (_poem != null) return;
+        _poem = new Poem
+        {
+            PdfPageStart = pdfPage,
+            Category = _cat!,
+            Seq = ++_poemSeq,
+            IndexInCategory = _cat!.Poems.Count + 1,
+            Title = _cfg.UntitledPoemTemplate.Replace("{n}", TextNormalizer.ToPersianDigits(++_untitledCounter))
+        };
+        _poem.Flags.Add("no-heading");
+        _cat.Poems.Add(_poem);
+    }
+
+    /// <summary>One printed paragraph becomes one paragraph verse (no line breaks).</summary>
+    private void AddParagraph(Block b, PageResult page)
+    {
+        string text = TextNormalizer.Normalize(b.Text, _cfg, out bool fn);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+        if (text.Length == 0) return;
+        CloseCenteredPair();
+        EnsurePoem(page.PdfPage);
+
+        var last = _poem!.Rows.Count > 0 ? _poem.Rows[^1] : null;
+        if (b.ContinuesPreviousPage && last is { Layout: "paragraph" })
+        {
+            last.Text = last.Text + " " + text;
+            if (fn) last.Flags.Add("footnote-marker-removed");
+            return;
+        }
+        var row = new Row { Layout = "paragraph", PdfPage = page.PdfPage, Text = text, Uncertain = b.Uncertain };
+        if (b.UncertainWords != null)
+            foreach (string w in b.UncertainWords.Where(w => !string.IsNullOrWhiteSpace(w))) row.UncertainWords.Add(w.Trim());
+        if (fn) row.Flags.Add("footnote-marker-removed");
+        _poem.Rows.Add(row);
+    }
+
     private void AddRow(Block b, PageResult page)
     {
-        EnsureCategory(page.PdfPage);
-        if (_poem == null)
-        {
-            _poem = new Poem
-            {
-                PdfPageStart = page.PdfPage,
-                Category = _cat!,
-                Seq = ++_poemSeq,
-                IndexInCategory = _cat!.Poems.Count + 1,
-                Title = _cfg.UntitledPoemTemplate.Replace("{n}", TextNormalizer.ToPersianDigits(++_untitledCounter))
-            };
-            _poem.Flags.Add("no-heading");
-            _cat.Poems.Add(_poem);
-        }
+        EnsurePoem(page.PdfPage);
 
         string layout = (b.Layout ?? "two_column").Trim().ToLowerInvariant();
         if (layout != "two_column" && layout != "centered" && layout != "single") layout = "two_column";
@@ -211,8 +241,8 @@ public sealed class BookAssembler
         }
         if (fn1 || fn2 || fn3) row.Flags.Add("footnote-marker-removed");
 
-        _poem.Rows.Add(row);
-        TrackCounter(row);
+        _poem!.Rows.Add(row);
+        if (!_cfg.IncludeProse) TrackCounter(row); // in prose books the margin numbers count printed lines, not bayts
     }
 
     // ---- verse counter validation (the numbers printed in the margin every 5 bayts) ----
@@ -419,7 +449,7 @@ public sealed class BookAssembler
                         p.Flags.Add("duplicate-title-renamed");
                     }
                 }
-                PoemBuilder.Build(p);
+                PoemBuilder.Build(p, _cfg.IncludeProse);
             }
         }
         return _book;

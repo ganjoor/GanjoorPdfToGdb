@@ -17,7 +17,7 @@ public static class PoemBuilder
     private const double MasnaviShare = 0.8;
     private const int MasnaviMinCommonEnding = 2;
 
-    public static void Build(Poem poem)
+    public static void Build(Poem poem, bool proseBook = false)
     {
         poem.Verses.Clear();
 
@@ -72,8 +72,18 @@ public static class PoemBuilder
                     while (j < rows.Count && rows[j].Layout == "centered") j++;
                     int k = i;
                     for (; k + 1 < j; k += 2)
-                        AddCenteredPair(poem, ref order, rows[k], rows[k + 1], rhyme, masnavi);
-                    if (k < j) // odd line left over
+                    {
+                        if (proseBook) AddStackedCouplet(poem, ref order, rows[k], rows[k + 1]);
+                        else AddCenteredPair(poem, ref order, rows[k], rows[k + 1], rhyme, masnavi);
+                    }
+                    if (k < j && proseBook) // a lone hemistich quoted in prose
+                    {
+                        var lone = rows[k];
+                        var v = Add(poem, ref order, VersePosition.Single, lone.Text ?? "", lone);
+                        v.Flags.Add("odd-hemistich");
+                        poem.Flags.Add("odd-hemistich");
+                    }
+                    else if (k < j) // odd line left over
                     {
                         var lone = rows[k];
                         var v = Add(poem, ref order, VersePosition.CenteredVerse1, lone.Text ?? "", lone);
@@ -82,6 +92,12 @@ public static class PoemBuilder
                         poem.Flags.Add("centered-odd-row");
                     }
                     i = j;
+                    break;
+                }
+                case "paragraph":
+                {
+                    Add(poem, ref order, VersePosition.Paragraph, r.Text ?? "", r);
+                    i++;
                     break;
                 }
                 default: // single
@@ -94,6 +110,16 @@ public static class PoemBuilder
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// In a book of mixed prose and verse the verses are often printed as stacked hemistichs only because of the
+    /// narrow column, so every two stacked lines are one ordinary bayt.
+    /// </summary>
+    private static void AddStackedCouplet(Poem poem, ref int order, Row first, Row second)
+    {
+        Add(poem, ref order, VersePosition.Right, first.Text ?? "", first);
+        Add(poem, ref order, VersePosition.Left, second.Text ?? "", second);
     }
 
     private static void AddCenteredPair(Poem poem, ref int order, Row first, Row second, RhymeInfo? rhyme, bool masnavi)
