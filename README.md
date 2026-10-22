@@ -163,3 +163,13 @@ printed on (`POST https://api.naskban.ir/api/pdf/ganjoor` with the poem id, its 
 «گنجور » … » title», the book id and the page number; `isTextOriginalSource` is true). Links go to the Naskban moderation queue.
 A `*.naskban-<id>.report.txt` next to the `.gdb` lists doubtful matches and unmatched poems; a `*.done.txt` remembers what was
 sent, so a re-run (or a run after an interruption) sends only what is missing. A saved password is encrypted with Windows DPAPI.
+
+## Building the installer (end-user setup.exe)
+
+`installer\build-installer.cmd` (or `build-installer.ps1 -Version 1.0.1`) publishes the Windows app self-contained
+(win-x64, no .NET installation needed on the user's PC) and wraps it with Inno Setup into
+`installer\output\Pdf2GdbStudio-Setup-<version>.exe`. The setup installs for the current user without an administrator
+prompt, adds a desktop shortcut and a Start menu shortcut (both on by default) plus an uninstaller, and upgrades an older
+version in place. Put the unzipped poppler folder in `src\GanjoorPdfToGdb.WinForms\poppler` before building to ship it
+inside the app (check poppler's licence terms for redistribution). The icon is `src\GanjoorPdfToGdb.WinForms\app.ico`
+(`tools\make_icon.py` regenerates it).

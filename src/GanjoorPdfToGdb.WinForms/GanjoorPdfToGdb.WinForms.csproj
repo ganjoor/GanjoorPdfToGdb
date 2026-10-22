@@ -9,6 +9,11 @@
     <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
     <AssemblyName>Pdf2GdbStudio</AssemblyName>
     <RootNamespace>GanjoorPdfToGdb.WinForms</RootNamespace>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>Pdf2Gdb Studio</Product>
+    <Company>Ganjoor</Company>
+    <Description>Convert scanned Persian poetry books to Desktop Ganjoor GDB files</Description>
   </PropertyGroup>
 
   <ItemGroup>

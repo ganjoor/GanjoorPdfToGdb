@@ -36,6 +36,7 @@ public sealed class NaskbanLinkForm : Form
     {
         _s = NaskbanSettings.Load();
 
+        Icon = AppIcon.Get();
         Text = "پیوند شعرهای گنجور به صفحه‌های PDF در نسک‌بان";
         StartPosition = FormStartPosition.CenterParent;
         ClientSize = new Size(820, 700);

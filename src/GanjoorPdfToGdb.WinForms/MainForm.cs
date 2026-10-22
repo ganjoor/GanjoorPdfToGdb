@@ -45,6 +45,7 @@ public sealed class MainForm : Form
         _ui = UiSettings.Load();
         _cfg = LoadConfig();
 
+        Icon = AppIcon.Get();
         Text = "تبدیل کتاب اسکن‌شده به GDB";
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(860, 720);
