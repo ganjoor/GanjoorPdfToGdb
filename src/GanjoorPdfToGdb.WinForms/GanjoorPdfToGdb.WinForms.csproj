@@ -15,6 +15,11 @@
     <ProjectReference Include="..\GanjoorPdfToGdb.Core\GanjoorPdfToGdb.Core.csproj" />
   </ItemGroup>
 
+  <!-- the saved Naskban password is encrypted with Windows DPAPI -->
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+  </ItemGroup>
+
   <!-- Optional: put the unzipped poppler folder in src\GanjoorPdfToGdb.WinForms\poppler and it is copied
        next to the exe on every build (the app finds pdftoppm.exe anywhere below that folder). -->
   <ItemGroup>

@@ -1,5 +1,25 @@
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+
+# build output
 bin/
 obj/
-out/
-*.user
-/.vs/GanjoorPdfToGdb.slnx
+publish/
+*.nupkg
+
+# local settings and secrets (API keys, Naskban credentials)
+appsettings.json
+appsettings.local.json
+
+# runtime output of the converter
+work/
+*.done.txt
+
+# OS files
+Thumbs.db
+.DS_Store

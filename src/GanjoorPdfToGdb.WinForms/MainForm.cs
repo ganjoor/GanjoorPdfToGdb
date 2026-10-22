@@ -27,6 +27,7 @@ public sealed class MainForm : Form
     private readonly Button _btnStop = new();
     private readonly Button _btnOpen = new();
     private readonly Button _btnAdvanced = new();
+    private readonly Button _btnLink = new();
     private readonly List<Control> _lockWhileRunning = new();
 
     // feedback
@@ -144,7 +145,8 @@ public sealed class MainForm : Form
         SetupButton(_btnAssemble, "ساخت دوباره بدون اتصال");
         SetupButton(_btnStop, "توقف");
         SetupButton(_btnOpen, "باز کردن پوشهٔ خروجی");
-        buttons.Controls.AddRange(new Control[] { _btnStart, _btnTest, _btnAssemble, _btnStop, _btnOpen });
+        SetupButton(_btnLink, "پیوند به گنجور / نسک‌بان…");
+        buttons.Controls.AddRange(new Control[] { _btnStart, _btnTest, _btnAssemble, _btnStop, _btnOpen, _btnLink });
 
         // ---- progress
         var progress = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 1, RowCount = 2 };
@@ -343,6 +345,11 @@ public sealed class MainForm : Form
         _btnStart.Click += async (_, _) => await StartAsync(JobMode.Run, trial: false);
         _btnTest.Click += async (_, _) => await StartAsync(JobMode.Run, trial: true);
         _btnAssemble.Click += async (_, _) => await StartAsync(JobMode.Assemble, trial: false);
+        _btnLink.Click += (_, _) =>
+        {
+            using var dlg = new NaskbanLinkForm();
+            dlg.ShowDialog(this);
+        };
         _btnStop.Click += (_, _) =>
         {
             _status.Text = "در حال توقف… (صفحه‌های انجام‌شده نگه داشته می‌شوند)";
@@ -545,6 +552,7 @@ public sealed class MainForm : Form
         _btnTest.Enabled = !running;
         _btnAssemble.Enabled = !running;
         _btnOpen.Enabled = !running;
+        _btnLink.Enabled = !running;
         _btnStop.Enabled = running;
     }
 

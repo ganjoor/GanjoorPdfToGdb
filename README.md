@@ -145,3 +145,21 @@ Turn on `IncludeProse` (CLI: `--include-prose`; Windows app: the checkbox under 
 * Title pages, contents, indexes and blank pages are still skipped. Margin line counters are ignored (they count
   printed lines, so the verse-counter check is off in this mode).
 * Prose mode has its own cache folder (`work/pages-prose`), so it never mixes with an earlier poetry-only run of the same book.
+
+## Linking published poems to the PDF pages on naskban.ir
+
+After a book is published on ganjoor.net, export the poet from the site as a `.gdb` (poem ids and urls then match the
+site database) and link it to the PDF stored on naskban.ir:
+
+* Windows app: button «پیوند به گنجور / نسک‌بان…» (file `.gdb`, the converter's `.pages.json`, the Naskban book id, your
+  Naskban user name and password).
+* Command line:
+  `pdf2gdb link --gdb taleb.gdb --json book.pages.json --book-id 24017` (user/password from `NASKBAN_USER` /
+  `NASKBAN_PASSWORD` or `--user` / `--password`; `--preview` only builds the report; `--first-page-only`; `--machine`).
+
+How it works: the poems of the `.gdb` are matched to the poems of the JSON by text (ids, titles and categories may have
+been edited on the site; merged or split poems are handled), and every poem is linked to exactly the pages its verses are
+printed on (`POST https://api.naskban.ir/api/pdf/ganjoor` with the poem id, its address, the full title
+«گنجور » … » title», the book id and the page number; `isTextOriginalSource` is true). Links go to the Naskban moderation queue.
+A `*.naskban-<id>.report.txt` next to the `.gdb` lists doubtful matches and unmatched poems; a `*.done.txt` remembers what was
+sent, so a re-run (or a run after an interruption) sends only what is missing. A saved password is encrypted with Windows DPAPI.
