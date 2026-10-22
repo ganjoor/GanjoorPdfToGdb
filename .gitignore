@@ -16,6 +16,9 @@ publish/
 appsettings.json
 appsettings.local.json
 
+# poppler binaries copied in for the installer (large, third-party)
+src/GanjoorPdfToGdb.WinForms/poppler/
+
 # runtime output of the converter
 work/
 *.done.txt
