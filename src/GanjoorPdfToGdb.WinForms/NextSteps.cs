@@ -8,39 +8,64 @@ internal static class NextSteps
     public const string DesktopGanjoorUrl = "https://dg.ganjoor.net";
     public const string Email = "ganjoor@ganjoor.net";
 
-    public const string OpenTip =
-        "فایل gdb را می‌توانید در گنجور رومیزی (dg.ganjoor.net) باز کنید، بخوانید و غلط‌هایش را اصلاح کنید.";
-
-    public const string SendTip =
-        "برای ارسال کار به گنجور، هر دو فایل gdb و json را بفرستید (فایل json برای پیوند دادن شعرها به صفحه‌های کتاب در نسک‌بان لازم است) به نشانی ganjoor@ganjoor.net.";
-
     public static void OpenLink(string url)
     {
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
         catch (Exception) { /* no default handler; nothing useful to do */ }
     }
 
-    /// <summary>A LinkLabel whose text contains the two links (site and e-mail).</summary>
-    public static LinkLabel NewTipsLabel(bool includeTitle)
+    // Latin addresses are kept out of the Persian sentences (in their own left-to-right link labels),
+    // because mixing them into right-to-left text makes parentheses, dots and link ranges display wrongly.
+    public static Control NewTipsPanel(bool includeTitle)
     {
-        string text = (includeTitle ? "نکته‌ها:\r\n" : "")
-            + "• " + OpenTip + "\r\n"
-            + "• " + SendTip;
-        var l = new LinkLabel
+        var t = new TableLayoutPanel
         {
-            Text = text,
+            Dock = DockStyle.Fill,
             AutoSize = true,
-            MaximumSize = new Size(760, 0),
-            Anchor = AnchorStyles.Right,
-            Margin = new Padding(3, 4, 3, 4),
-            LinkBehavior = LinkBehavior.HoverUnderline
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            ColumnCount = 1,
+            Margin = new Padding(0, 6, 0, 6)
         };
-        int a = text.IndexOf("dg.ganjoor.net", StringComparison.Ordinal);
-        if (a >= 0) l.Links.Add(a, "dg.ganjoor.net".Length, DesktopGanjoorUrl);
-        int b = text.IndexOf(Email, StringComparison.Ordinal);
-        if (b >= 0) l.Links.Add(b, Email.Length, "mailto:" + Email);
-        l.LinkClicked += (_, e) => { if (e.Link?.LinkData is string s) OpenLink(s); };
-        return l;
+        t.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+        void Add(Control c) { c.Anchor = AnchorStyles.Right; t.Controls.Add(c); }
+        Label Para(string s, bool bold = false)
+        {
+            var l = new Label { Text = s, AutoSize = true, MaximumSize = new Size(740, 0), Margin = new Padding(3, 2, 3, 2) };
+            if (bold) l.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            return l;
+        }
+        Control LinkRow(string caption, string shown, string target)
+        {
+            var row = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                Margin = new Padding(3, 0, 3, 4)
+            };
+            var cap = new Label { Text = caption, AutoSize = true, Margin = new Padding(3, 3, 3, 3) };
+            var link = new LinkLabel
+            {
+                Text = shown,
+                AutoSize = true,
+                RightToLeft = RightToLeft.No,
+                Margin = new Padding(3, 3, 3, 3),
+                LinkBehavior = LinkBehavior.HoverUnderline
+            };
+            link.LinkClicked += (_, _) => OpenLink(target);
+            row.Controls.Add(cap);   // first control = rightmost
+            row.Controls.Add(link);
+            return row;
+        }
+
+        if (includeTitle) Add(Para("نکته‌ها", true));
+        Add(Para("• فایل gdb را می‌توانید با گنجور رومیزی باز کنید، بخوانید و غلط‌هایش را اصلاح کنید."));
+        Add(LinkRow("دریافت گنجور رومیزی:", "dg.ganjoor.net", DesktopGanjoorUrl));
+        Add(Para("• برای ارسال کار به گنجور، هر دو فایل gdb و json را بفرستید (فایل json برای پیوند دادن شعرها به صفحه‌های کتاب در نسک‌بان لازم است)."));
+        Add(LinkRow("نشانی ایمیل:", Email, "mailto:" + Email));
+        return t;
     }
 }
 
@@ -68,8 +93,7 @@ public sealed class NextStepsDialog : Form
             Anchor = AnchorStyles.Right,
             Margin = new Padding(3, 0, 3, 8)
         };
-        var tips = NextSteps.NewTipsLabel(false);
-        tips.MaximumSize = new Size(600, 0);
+        var tips = NextSteps.NewTipsPanel(false);
 
         var open = new Button { Text = "باز کردن پوشهٔ خروجی", AutoSize = true, Padding = new Padding(8, 2, 8, 2) };
         open.Click += (_, _) => NextSteps.OpenLink(outDir);

@@ -178,7 +178,7 @@ public sealed class MainForm : Form
         root.Controls.Add(svcGroup, 0, 1);
         root.Controls.Add(buttons, 0, 2);
         root.Controls.Add(progress, 0, 3);
-        root.Controls.Add(NextSteps.NewTipsLabel(true), 0, 4);
+        root.Controls.Add(NextSteps.NewTipsPanel(true), 0, 4);
         root.Controls.Add(_log, 0, 5);
         Controls.Add(root);
         FormFit.Attach(this, root, _log);
