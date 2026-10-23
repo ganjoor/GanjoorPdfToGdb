@@ -49,7 +49,7 @@ public sealed class MainForm : Form
         Text = "تبدیل کتاب اسکن‌شده به GDB";
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(860, 720);
-        MinimumSize = new Size(720, 600);
+        MinimumSize = new Size(640, 420);
         RightToLeft = RightToLeft.Yes;
         RightToLeftLayout = true;
         Font = new Font("Segoe UI", 10f);
@@ -179,6 +179,7 @@ public sealed class MainForm : Form
         root.Controls.Add(progress, 0, 3);
         root.Controls.Add(_log, 0, 4);
         Controls.Add(root);
+        FormFit.Attach(this, root, _log);
 
         _lockWhileRunning.AddRange(new Control[]
         {

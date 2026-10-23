@@ -40,7 +40,7 @@ public sealed class NaskbanLinkForm : Form
         Text = "پیوند شعرهای گنجور به صفحه‌های PDF در نسک‌بان";
         StartPosition = FormStartPosition.CenterParent;
         ClientSize = new Size(820, 700);
-        MinimumSize = new Size(700, 560);
+        MinimumSize = new Size(640, 420);
         RightToLeft = RightToLeft.Yes;
         RightToLeftLayout = true;
         Font = new Font("Segoe UI", 10f);
@@ -156,6 +156,7 @@ public sealed class NaskbanLinkForm : Form
         root.Controls.Add(progress, 0, 4);
         root.Controls.Add(_log, 0, 5);
         Controls.Add(root);
+        FormFit.Attach(this, root, _log);
 
         _lockWhileRunning.AddRange(new Control[]
         {
