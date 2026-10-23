@@ -173,3 +173,9 @@ prompt, adds a desktop shortcut and a Start menu shortcut (both on by default) p
 version in place. Put the unzipped poppler folder in `src\GanjoorPdfToGdb.WinForms\poppler` before building to ship it
 inside the app (check poppler's licence terms for redistribution). The icon is `src\GanjoorPdfToGdb.WinForms\app.ico`
 (`tools\make_icon.py` regenerates it).
+
+
+## بعد از تبدیل
+
+- فایل `gdb` را با [گنجور رومیزی](https://dg.ganjoor.net) باز کنید، بخوانید و اصلاح کنید.
+- برای ارسال کار به گنجور، هر دو فایل `gdb` و `pages.json` را به ganjoor@ganjoor.net بفرستید (فایل json برای پیوند دادن شعرها به صفحه‌های کتاب در نسک‌بان لازم است).

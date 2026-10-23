@@ -70,7 +70,7 @@ public sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 5,
+            RowCount = 6,
             Padding = new Padding(10)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -78,6 +78,7 @@ public sealed class MainForm : Form
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // service group
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // buttons
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // progress
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // tips
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // log
 
         // ---- book group
@@ -177,7 +178,8 @@ public sealed class MainForm : Form
         root.Controls.Add(svcGroup, 0, 1);
         root.Controls.Add(buttons, 0, 2);
         root.Controls.Add(progress, 0, 3);
-        root.Controls.Add(_log, 0, 4);
+        root.Controls.Add(NextSteps.NewTipsLabel(true), 0, 4);
+        root.Controls.Add(_log, 0, 5);
         Controls.Add(root);
         FormFit.Attach(this, root, _log);
 
@@ -527,6 +529,7 @@ public sealed class MainForm : Form
             UiLog(r.GdbPath);
             UiLog(r.SidecarPath);
             UiLog(r.ReportPath);
+            if (!trial && !r.HasFailedPages) NextStepsDialog.ShowFor(this, Path.GetDirectoryName(r.GdbPath) ?? "");
         }
         catch (OperationCanceledException)
         {
